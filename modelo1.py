@@ -1,42 +1,65 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
+ttot = 30
+diag = 2
+f = -9.81 # gravidade
+ci = 2
 
-for dt in [0.5 , 1, 2, 5, 10]:
+dts = [0.5, 1, 2, 5, 10]
 
-    ttot = 30
-    diag = 2
+def sol_analitica(t):
+    return ci + f * t
 
-    nn = int(ttot/dt)
+t_fino = np.linspace(0, ttot, 500)
 
-    print(10*'*', ' tempo total de intergação = ', ttot, 10*'*')
-    print(10*'*', ' passo de tempo = ', dt, 10*'*')
-    print(10*'*', ' numero total de passos de tempo = ', nn, 10*'*')
-    print(10*'*', ' intervalo de tempo para diagnostico = ', diag, 10*'*')
+fig, axes = plt.subplots(2, 3, figsize=(15, 7))
+ax_dif = axes.flat[-1]
 
-    f = -9.81 # gravidade
+for dt, ax in zip(dts, axes.flat):
 
-    ci = 2 # condicao inicial
+    nn = int(round(ttot / dt))
 
-    u = [ci]
-    a = [ci]
+    u = [ci] # solução numérica
+    tt = [0.0] # tempos salvos
 
     u_c = ci
+    for n in range(1, nn + 1):
+        u_p = u_c + f * dt
+        tempo = n * dt
 
-    for t in range(1, nn+1):
-        u_p = u_c + f * dt  
-        tempo = t * dt
-        a_p = ci + f * tempo
-        
-        if np.isclose(tempo % diag,0) or np.isclose(tempo % diag, diag):
+        resto = tempo % diag
+        if np.isclose(resto, 0) or np.isclose(resto, diag):
             u.append(u_p)
-            a.append(a_p)
+            tt.append(tempo)
 
         u_c = u_p
 
+    tt = np.array(tt)
+    u = np.array(u)
 
+    # analítica contínua + numérica com pontos
+    ax.plot(t_fino, sol_analitica(t_fino), color='k', lw=1.5, label='Sol. Analítica')
+    ax.plot(tt, u, marker='o', ms=5, lw=1, ls='--', color='tab:red', label='Sol. Numérica')
+    ax.set_title(f'dt = {dt} s')
+    ax.set_xlabel('tempo (s)')
+    ax.set_ylabel('u (m/s)')
+    ax.grid(True)
+    ax.legend()
 
-    print(dt)
-    print(a==u)
-    print(a)
-    print(u)
+    # diferença nos tempos de diagnóstico
+    dif = sol_analitica(tt) - u
+    ax_dif.plot(tt, dif, marker='o', ms=4, label=f'dt = {dt} s')
 
+ax_dif.axhline(0, color='k', lw=0.8)
+ax_dif.set_title('Analítica - Numérica')
+ax_dif.set_xlabel('tempo (s)')
+ax_dif.set_ylabel('diferença (m/s)')
+ax_dif.grid(True)
+ax_dif.legend(fontsize=8)
+ax_dif.set_ylim(-1, 1)
+
+plt.tight_layout()
+# plt.show()
+
+plt.savefig("/Users/breno/doutorado/cfd_amb_oce/cfd_001/result.png", dpi=300)
